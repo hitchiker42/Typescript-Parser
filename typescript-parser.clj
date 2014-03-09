@@ -1,17 +1,7 @@
-(defmacro raise [err] `(throw (Exception. ~(str err))))
-(defmacro raise-fmt [format & args]
-  `(throw (Exception. (format-string ~format ~@args))))
-;;We need an option type, what's the best way to do that?
 (ns typescript
-  (:require [instaparse.core :as yy]
-            [clojure.core.typed :as typed]))
+  (:require [instaparse.core :as yy]))
 (def ts-parser (yy/parser (slurp "typescript.ebnf")))
 (defn ts-parse [input] (yy/parse ts-parser input))
-(defmacro eq [a b] (identical? a b))
-(defn ash [integer count]
-  (if (>= count 0)
-    (bit-shift-left integer count)
-    (bit-shift-right integer (- count))))
 (defn strtol [str]
   (try
     (java.lang.Long/parseLong str)
@@ -23,6 +13,8 @@
 (defn parse-escape [str];assume str starts one character after a \
   (let [[esc & rest] str]
   (letfn [(isdigit [x] (and (> x 0x2F) (< x 0x3A)))
+;;I have no real reason not to just call strtol here
+;;but I don't 
           (strtol-hex 
             ([a b] 
                (if (and (isdigit a) (isdigit b))
