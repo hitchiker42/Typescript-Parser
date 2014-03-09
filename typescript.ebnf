@@ -1,24 +1,24 @@
 (*The syntax of this file should be mostly self explanatory if you understand EBNF 
   and regular expressions, The one unique feature is that a literal or a rule
   can be excluded from the resulting parse tree by surronding it with angle brackets*)
-S ::= DeclarationSourceFile
-TypeParameters ::= <'<'> TypeParameterList <'>'>
-TypeParameterList ::= ws-opt TypeParameter (<','> TypeParameter)*
-TypeParameter ::= Identifier ws [Constraint] ws-opt
+<S> ::= DeclarationSourceFile
+TypeParameters ::= <'<'> ws-opt TypeParameter (<','> TypeParameter)* <'>'>
+TypeParameter ::= Identifier [ws Constraint] ws-opt
 Identifier ::= #"[$_\p{L}][$_\p{L}\p{N}]*"
 Constraint ::= <'extends'> ws Type
-Type ::= PredefinedType
+Type ::= TypeLiteral
        | TypeReference
        | TypeQuery
-       | TypeLiteral
-<PredefinedType> ::= "any"
-                    | "number"
-                    | "boolean"
-                    | "string"
-                    | "void"
+       | PredefinedType
+
+PredefinedType ::= "any"
+                 | "number"
+                 | "boolean"
+                 | "string"
+                 | "void"
 TypeReference ::= QualifiedIdentifier [ws TypeArguments]
 QualifiedIdentifier ::= Identifier
-                       | ModuleName '.' Identifier
+                      | ModuleName '.' Identifier
 (*This isn't really necessary, but it's useful to seperate the module name*)
 ModuleName ::= Identifier ['.' Identifier]*
 TypeArguments ::= <'<'> TypeArgumentList <'>'>
@@ -26,17 +26,17 @@ TypeArgumentList ::= TypeArgument ws-opt (<','> TypeArgument)*
 TypeArgument ::= Type
 TypeQuery ::= <"typeof"> ws QualifiedIdentifier
 TypeLiteral ::= ObjectType
-               | ArrayType
-               | FunctionType
-               | ConstructorType
+              | ArrayType
+              | FunctionType
+              | ConstructorType
 ArrayType ::= ElementType ws-opt <'['> ws-opt <']'>
-ElementType ::= PredefinedType
-               | TypeReference
-               | TypeQuery
-               | ObjectType
-               | ArrayType
+<ElementType> ::= TypeQuery
+                | TypeReference
+                | PredefinedType
+                | ObjectType
+                | ArrayType
 FunctionType ::= 
-  [TypeParameters] '(' [Parameter-List] ws-opt ')' ws-opt "=>" ws-opt Type
+  [TypeParameters] <'('> [Parameter-List] ws-opt <')'> ws-opt "=>" ws-opt Type
 ConstructorType ::= <"new"> ws FunctionType
 ObjectType ::= '{' ws-opt [TypeBody] ws-opt '}'
 TypeBody ::= TypeMemberList ws-opt [<';'>]
@@ -46,12 +46,12 @@ TypeMember ::= PropertySignature
               | ConstructSignature
               | IndexSignature
               | MethodSignature
-PropertySignature ::= PropertyName ['?'] [TypeAnnotation]
+PropertySignature ::= PropertyName ws-opt ['?'] ws-opt [TypeAnnotation]
 PropertyName ::= Identifier
-                | StringLiteral
-                | NumericLiteral
+               | StringLiteral
+               | NumericLiteral
 CallSignature ::= 
-  [TypeParameters] ws-opt '(' ws-opt [Parameter-List] ws-opt ')' ws-opt [TypeAnnotation]
+  [TypeParameters] ws-opt <'('> ws-opt [Parameter-List] ws-opt <')'> ws-opt [TypeAnnotation]
 Parameter-List ::= 
     RequiredParameterList
   | OptionalParameterList
@@ -60,18 +60,18 @@ Parameter-List ::=
   | RequiredParameterList <','> RestParameter
   | OptionalParameterList <','> RestParameter
   | RequiredParameterList <','> OptionalParameterList <','> RestParameter
-RequiredParameterList ::= RequiredParameter (<','> RequiredParameter)*
+<RequiredParameterList> ::= RequiredParameter (<','> RequiredParameter)*
 RequiredParameter ::= [#"public|private"] Identifier [TypeAnnotation] ws-opt
-                     | Identifier ':' StringLiteral ws-opt
-OptionalParameterList ::= OptionalParameter (<','> OptionalParameter)*
-OptionalParameter ::= [#"public|private" ws] Identifier '?' [TypeAnnotation] ws-opt 
-                     | [#"public|private" ws] Identifier [TypeAnnotation] Initialiser ws-opt
+                    | Identifier ':' StringLiteral ws-opt
+<OptionalParameterList> ::= OptionalParameter (<','> OptionalParameter)*
+OptionalParameter ::= [#"public|private" ws] Identifier <'?'>z [TypeAnnotation] ws-opt 
+                    | [#"public|private" ws] Identifier [TypeAnnotation] Initialiser ws-opt
 Initialiser ::= "=" LiteralValue
 RestParameter ::= "..." Identifier [TypeAnnotation] ws-opt
 ConstructSignature ::= "new" CallSignature
 IndexSignature ::= "[" Identifier ':' #"string|number" "]" TypeAnnotation
 MethodSignature ::= PropertyName ['?'] CallSignature
-TypeAnnotation ::= ':' Type
+TypeAnnotation ::= ws-opt <':'> Type
 InterfaceDeclaration ::= 
   <"interface"> ws Identifier [TypeParameters] [InterfaceExtendsClause] ObjectType
 InterfaceExtendsClause ::= <"extends"> ClassOrInterfaceTypeList
@@ -80,7 +80,7 @@ ClassOrInterfaceType ::= TypeReference
 ClassHeritage ::= [ClassExtendsClause] [ImplementsClause]
 ClassExtendsClause ::= "extends" TypeReference
 ImplementsClause ::= "implements" ClassOrInterfaceTypeList
-DeclarationSourceFile ::= DeclarationElement*
+<DeclarationSourceFile> ::= DeclarationElement*
 DeclarationElement ::= ExportAssignment
                       | [<"export">] InterfaceDeclaration
                       | [<"export">] ImportDeclarartion
@@ -91,21 +91,21 @@ ExternalImportDeclaration ::=
   "import" Identifier '=' ExternalModuleReference <';'>
 ExternalModuleReference ::= "require" <'('> StringLiteral <')'>
 ExportAssignment ::= "export" "=" Identifier ';'
-AmbientDeclaration ::= <"declare"> ws AmbientVariableDeclaration
-                      | <"declare"> ws AmbientFunctionDeclaration
-                      | <"declare"> ws AmbientClassDeclaration
-                      | <"declare"> ws AmbientEnumDeclaration
-                      | <"declare"> ws AmbientModuleDeclaration
-                      | <"declare"> ws AmbientExternalModuleDeclaration
+<AmbientDeclaration> ::= <"declare"> ws AmbientVariableDeclaration
+                     | <"declare"> ws AmbientFunctionDeclaration
+                     | <"declare"> ws AmbientClassDeclaration
+                     | <"declare"> ws AmbientEnumDeclaration
+                     | <"declare"> ws AmbientModuleDeclaration
+                     | <"declare"> ws AmbientExternalModuleDeclaration
 AmbientVariableDeclaration ::= <"var"> ws Identifier [ws TypeAnnotation] ws-opt <';'>
-AmbientFunctionDeclaration ::= <"function"> Identifier CallSignature <';'>
+AmbientFunctionDeclaration ::= <"function"> ws Identifier ws CallSignature <';'>
 AmbientClassDeclaration ::=
-  <"class"> Identifier [TypeParameters] ClassHeritage <'{'> AmbientClassBody <'}'>
+  <"class"> ws Identifier [TypeParameters] ClassHeritage <'{'> AmbientClassBody <'}'>
 AmbientClassBody ::= AmbientClassBodyElement*
 AmbientClassBodyElement ::= AmbientConstructorDeclaration
                              | AmbientPropertyMemberDeclaration
                              | IndexSignature
-AmbientConstructorDeclaration ::= <"constructor"> '(' [Parameter-List] ')' <';'>
+AmbientConstructorDeclaration ::= <"constructor"> ws '(' [Parameter-List] ')' <';'>
 AmbientPropertyMemberDeclaration ::=
   [#"public|private" ws] ["static" ws] PropertyName [TypeAnnotation] ';'
   [#"public|private" ws] ["static" ws] PropertyName CallSignature ';'
@@ -116,12 +116,12 @@ AmbientModuleDeclaration ::=
   "module" QualifiedIdentifier '{' AmbientModuleBody '}'
 AmbientModuleBody ::= AmbientModuleElement*
 AmbientModuleElement ::= [<"export">] ws AmbientVariableDeclaration
-                         | [<"export">] ws AmbientFunctionDeclaration
-                         | [<"export">] ws AmbientClassDeclaration
-                         | [<"export">] ws AmbientEnumDeclaration
-                         | [<"export">] ws AmbientModuleDeclaration
-                         | [<"export">] ws AmbientExternalModuleDeclaration
-                         | [<"export">] ws ImportDeclarartion
+                       | [<"export">] ws AmbientFunctionDeclaration
+                       | [<"export">] ws AmbientClassDeclaration
+                       | [<"export">] ws AmbientEnumDeclaration
+                       | [<"export">] ws AmbientModuleDeclaration
+                       | [<"export">] ws AmbientExternalModuleDeclaration
+                       | [<"export">] ws ImportDeclarartion
 AmbientExternalModuleDeclaration ::= 
   "module" StringLiteral '{' AmbientExternalModuleBody '}'
 AmbientExternalModuleBody ::= AmbientExternalModuleElement*
@@ -134,14 +134,14 @@ LiteralValue ::= #"true|false"
                 | StringLiteral
                 | NumericLiteral
 StringLiteral ::=
-  #"(['\"])([^\"']*|\\\P{Zl}|(\\[\'\"bfnrtv]|x\p{XDigit}{2}|u\p{XDigit}{4}))*\1"
+  #"(['\"])([^\"']*|\\[\n\r\u2028\u2029]|(\\[\'\"bfnrtv]|x\p{XDigit}{2}|u\p{XDigit}{4}))*\1"
 NumericLiteral ::=
   (*Decimal: optional integer followed by optional '.' followed by mandatory
   integer followed by optional exponent*)
   #"((?:(?:[0-9]*)?\.?[0-f]+(?:[Ee][-+]?[0-9]+))|0[Xx]\p{XDigit}+)"
 <SeperatingWhitespace> ::= <#"[\p{Zs}\t\v\xA0\x20\x0C]">
-<LineTerminator> ::= <#"\p{Zl}">
-<Whitespace> ::= <#"[\p{Zs}\t\v\xA0\x20\x0C]|\p{Zl}">
+<LineTerminator> ::= <#"[\n\r\u2028\u2029]">
+<Whitespace> ::= <#"[\p{Zs}\t\v\xA0\x20\x0C]|[\n\r\u2028\u2029]">
 <ws> ::= Whitespace+
 <ws-opt> ::= Whitespace*
 <ws-sep> ::= SeperatingWhitespace+
